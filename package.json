@@ -15,9 +15,12 @@
     "node-libs-react-native": "^1.2.1",
     "react": "17.0.2",
     "react-native": "0.66.3",
+    "react-native-bg-thread": "^1.2.0",
     "react-native-crypto": "^2.2.0",
     "react-native-crypto-js": "^1.0.0",
-    "react-native-randombytes": "^3.6.1"
+    "react-native-fast-image": "^8.5.11",
+    "react-native-randombytes": "^3.6.1",
+    "react-native-svg": "^12.1.1"
   },
   "devDependencies": {
     "@babel/core": "^7.12.9",

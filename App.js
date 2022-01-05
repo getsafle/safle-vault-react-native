@@ -2,6 +2,9 @@
 // const crypto = require('crypto');
 require('node-libs-react-native/globals');
 
+import RnBgTask from 'react-native-bg-thread';
+import FastImage from 'react-native-fast-image'
+
 const vaultSDK = require('@getsafle/vault-housekeeper').Vault;
 
 const Vault = require('@getsafle/safle-vault');
@@ -19,6 +22,7 @@ import {
   TouchableOpacity,
   useColorScheme,
   View,
+  Image
 } from 'react-native';
 
 let vault;
@@ -27,6 +31,7 @@ const App= () => {
   const [gen, setGen] = React.useState('');
   const [ accounts, setAccounts ] = React.useState( [] );
   const [ pKey, setPkey ] = React.useState( '' );
+  const [loading, setLoading] = React.useState( false );
 
   const decKey = JSON.parse( '{"0":139,"1":163,"2":170,"3":82,"4":162,"5":27,"6":97,"7":26,"8":174,"9":68,"10":135,"11":41,"12":2,"13":220,"14":124,"15":141,"16":213,"17":198,"18":123,"19":178,"20":36,"21":254,"22":246,"23":32,"24":72,"25":165,"26":123,"27":121,"28":197,"29":86,"30":96,"31":166,"32":232,"33":157,"34":7,"35":36,"36":234,"37":152,"38":101,"39":222,"40":96,"41":30,"42":215,"43":165,"44":147,"45":82,"46":69,"47":99,"48":55,"49":16,"50":238,"51":82,"52":211,"53":141,"54":47,"55":212,"56":196,"57":61,"58":8,"59":85,"60":221,"61":139,"62":215,"63":244}' );
 
@@ -45,53 +50,31 @@ const App= () => {
     
   }, [] );
   
-  const generate = async () => {
-    // Encrypt
-    // let ciphertext = CryptoJS.AES.encrypt('my message', 'secret key 123').toString();
+  const generate = async () => {  
 
-    // // Decrypt
-    // let bytes  = CryptoJS.AES.decrypt(ciphertext, 'secret key 123');
-    // let originalText = bytes.toString(CryptoJS.enc.Utf8);
-
-    // console.log(originalText); // 'my message'
-// for( var i in crypto ){
-//   console.log( i, crypto[i] );
-// }
-    // console.log( crypto );
-    // const passwordDerivedKey = crypto.pbkdf2Sync('test2254', '12344256', 10000, 32, 'sha512');
-    // const passwordDerivedKeyHash = crypto.createHash('sha512',  passwordDerivedKey );
-    // const passwordDerivedKeyHashHex = passwordDerivedKeyHash.digest('hex');
-    // setGen( passwordDerivedKeyHashHex );
-
-    // const vault = new vaultSDK( 'https://ropsten.infura.io/v3/8faaf4fcbdcc4dd0bee8c87eb4b0315b' );
-    // let newVault
-    
-    // newVault = (await vault.generateVault( '1234' )).response;
-    // const acc = (await vault.getAccounts()).response;
-    // const pk = (await vault.exportPrivateKey( newVault, acc[0], '1234') ).response;
-    // setPkey( pk );
-    // setAccounts( [...accounts, acc] );
-    // const k = await vault.extractKeyring( newVault, '1234');
-    // console.log( k );
-
-    // console.log( vault );
-
-    const na = await vault.addAccount( decKey, '123456');
-    accts = (await vault.getAccounts( decKey )).response;
-    setAccounts( accts.map( e => e.address ) );
-    const pk = (await vault.exportPrivateKey( accounts[ accounts.length-1 ], '123456')).response;
-    setPkey( pk );
-    
-    const mnemonic = (await vault.exportMnemonic('123456') ).response;
-    console.log( mnemonic );
-
-
+    RnBgTask.runInBackground_withPriority("MIN", async () =>{
+      console.log('generate');
+      setLoading( true );
+        //simulate long running task (vault generation)
+        await new Promise( (res) => setTimeout( () => res('ok'), 2000 ) );  
+        const na = await vault.addAccount( decKey, '123456');
+        accts = (await vault.getAccounts( decKey )).response;
+        setAccounts( accts.map( e => e.address ) );
+        const pk = (await vault.exportPrivateKey( accounts[ accounts.length-1 ], '123456')).response;
+        setPkey( pk );
+        const mnemonic = (await vault.exportMnemonic('123456') ).response;
+        console.log( mnemonic );   
+      
+      console.log('finished.');
+      setLoading( false );
+    });
   }
   return (
     <SafeAreaView style={{ flex: 1, padding: 20, height: Dimensions.get('screen').height,justifyContent: 'space-between'}}>    
-      <View>
-        <Text style={styles.highlight}>Hello world</Text>
-        <TouchableOpacity onPress={generate}><Text>GENERATE</Text></TouchableOpacity>
+      <View style={styles.cont}>
+        <TouchableOpacity onPress={generate} style={styles.button}>
+          <Text style={styles.buttonLabel}>GENERATE WALLET</Text>
+        </TouchableOpacity>
 
         {accounts.map( addr => (
         <View key={addr}>
@@ -99,8 +82,10 @@ const App= () => {
           {addr}
         </Text></View>))}
       </View>
+      {loading && <FastImage style={{ width: 40, height: 40, alignSelf: 'center' }} 
+      source={require('./loading.gif')} />}
 
-      <View style={{ alignSelf: 'flex-start', justifySelf: 'flex-end' }}>
+      <View style={{...styles.cont, alignSelf: 'flex-start', justifySelf: 'flex-end' }}>
         <Text>Pkey: {pKey}</Text>
       </View>
     </SafeAreaView>
@@ -108,22 +93,20 @@ const App= () => {
 };
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  cont: {
+    paddingLeft: 20,
+    paddingRight: 20
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  button: {
+    backgroundColor: '#4466ff',
+    padding: 6,
+    width: 170,
+    borderRadius: 14,
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
-  },
-  highlight: {
-    fontWeight: '700',
-  },
+  buttonLabel: {
+    textAlign: 'center',
+    color: '#ffffff'
+  }
 });
 
 export default App;
